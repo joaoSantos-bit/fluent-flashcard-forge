@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -84,11 +85,33 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'flip': {
+					'0%': { 
+						transform: 'rotateY(0deg)',
+						transformStyle: 'preserve-3d'
+					},
+					'100%': { 
+						transform: 'rotateY(180deg)',
+						transformStyle: 'preserve-3d'
+					}
+				},
+				'flip-back': {
+					'0%': { 
+						transform: 'rotateY(180deg)',
+						transformStyle: 'preserve-3d'
+					},
+					'100%': { 
+						transform: 'rotateY(0deg)',
+						transformStyle: 'preserve-3d'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'flip': 'flip 0.5s ease-out forwards',
+				'flip-back': 'flip-back 0.5s ease-out forwards'
 			}
 		}
 	},
