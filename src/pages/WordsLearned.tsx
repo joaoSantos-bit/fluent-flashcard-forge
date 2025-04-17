@@ -5,16 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Navbar } from "@/components/Navbar";
 import { useAuth } from "@/contexts/AuthContext";
-import { Word, useFlashcards } from "@/contexts/FlashcardContext";
-import { WordCard } from "@/components/WordCard";
+import { Word, useFlashcards, MasteryLevel } from "@/contexts/FlashcardContext";
 import { useLanguage, Language } from "@/contexts/LanguageContext";
 import { useAppLanguage } from "@/contexts/AppLanguageContext";
-import { Search, BookCheck, BookText, BookX } from "lucide-react";
+import { Search, BookCheck, BookText, BookX, Volume2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { 
+  Table, 
+  TableBody, 
+  TableCaption, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 
 const WordsLearned = () => {
   const { isAuthenticated } = useAuth();
-  const { words, getWordsByLanguage, getWordsStats } = useFlashcards();
+  const { words, getWordsByLanguage, getWordsStats, updateWordMastery } = useFlashcards();
   const { targetLanguage, availableLanguages } = useLanguage();
   const { t } = useAppLanguage();
   const [filteredWords, setFilteredWords] = useState<Word[]>([]);
@@ -50,6 +59,29 @@ const WordsLearned = () => {
   }, [words, searchTerm, filterLanguage, statusFilter, getWordsByLanguage]);
 
   const stats = getWordsStats();
+
+  const handleMasteryChange = (wordId: string, masteryLevel: MasteryLevel) => {
+    updateWordMastery(wordId, masteryLevel);
+  };
+
+  const playAudio = (text: string, isSourceLanguage = true) => {
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = isSourceLanguage ? 'pt-BR' : 'en-US'; 
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const getMasteryBadge = (masteryLevel: MasteryLevel) => {
+    switch (masteryLevel) {
+      case "mastered":
+        return <Badge className="bg-green-500">{t("words.mastered")}</Badge>;
+      case "learning":
+        return <Badge className="bg-yellow-500">{t("words.learning")}</Badge>;
+      case "unknown":
+        return <Badge className="bg-red-500">{t("words.unknown")}</Badge>;
+      default:
+        return null;
+    }
+  };
 
   if (!isAuthenticated) {
     return null; // Don't render anything while checking auth
@@ -145,12 +177,81 @@ const WordsLearned = () => {
             </div>
           </div>
           
-          {/* Words List */}
+          {/* Words Table */}
           {filteredWords.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredWords.map((word) => (
-                <WordCard key={word.id} word={word} />
-              ))}
+            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <Table>
+                <TableCaption>{t("words.tableCaption")}</TableCaption>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("words.word")}</TableHead>
+                    <TableHead>{t("words.translation")}</TableHead>
+                    <TableHead>{t("words.status")}</TableHead>
+                    <TableHead className="text-right">{t("words.actions")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredWords.map((word) => (
+                    <TableRow key={word.id}>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center">
+                          {word.word}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 ml-1" 
+                            onClick={() => playAudio(word.word, true)}
+                          >
+                            <Volume2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center">
+                          {word.translation}
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 ml-1" 
+                            onClick={() => playAudio(word.translation, false)}
+                          >
+                            <Volume2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                      <TableCell>{getMasteryBadge(word.masteryLevel)}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleMasteryChange(word.id, "unknown")}
+                            className={word.masteryLevel === "unknown" ? "bg-red-100 dark:bg-red-900/30 border-red-200 dark:border-red-900" : ""}
+                          >
+                            {t("words.markUnknown")}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleMasteryChange(word.id, "learning")}
+                            className={word.masteryLevel === "learning" ? "bg-yellow-100 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-900" : ""}
+                          >
+                            {t("words.markLearning")}
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleMasteryChange(word.id, "mastered")}
+                            className={word.masteryLevel === "mastered" ? "bg-green-100 dark:bg-green-900/30 border-green-200 dark:border-green-900" : ""}
+                          >
+                            {t("words.markMastered")}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
             </div>
           ) : (
             <div className="text-center py-12 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">

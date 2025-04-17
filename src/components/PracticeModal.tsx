@@ -13,6 +13,7 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { FlashcardItem } from "./FlashcardItem";
 import { CheckCircle2, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useAppLanguage } from "@/contexts/AppLanguageContext";
+import { Progress } from "@/components/ui/progress";
 
 type PracticeModalProps = {
   open: boolean;
@@ -63,9 +64,13 @@ export function PracticeModal({ open, onOpenChange }: PracticeModalProps) {
     onOpenChange(false);
   };
 
+  const progressPercentage = practiceCards.length 
+    ? Math.round(((currentCardIndex + 1) / practiceCards.length) * 100) 
+    : 0;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-lg max-h-[95vh] bg-background">
         <DialogHeader>
           <DialogTitle>{t("practice.title")}</DialogTitle>
           <DialogDescription>
@@ -74,14 +79,14 @@ export function PracticeModal({ open, onOpenChange }: PracticeModalProps) {
         </DialogHeader>
 
         {practiceCards.length === 0 ? (
-          <div className="text-center py-10">
+          <div className="text-center py-6">
             <p className="text-gray-500 mb-4">
               {t("practice.noCards")}
             </p>
             <Button onClick={handleClose}>{t("practice.close")}</Button>
           </div>
         ) : isFinished ? (
-          <div className="text-center py-10">
+          <div className="text-center py-6">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-xl font-bold mb-2">{t("practice.complete")}</h3>
             <p className="text-gray-500 mb-6">
@@ -91,22 +96,48 @@ export function PracticeModal({ open, onOpenChange }: PracticeModalProps) {
           </div>
         ) : (
           <div className="py-4">
-            <div className="mb-4 text-center text-sm text-gray-500">
-              {t("practice.card")} {currentCardIndex + 1} {t("practice.of")} {practiceCards.length}
+            {/* Progress Indicator */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2 text-sm text-gray-500">
+                <span>{t("practice.card")} {currentCardIndex + 1} {t("practice.of")} {practiceCards.length}</span>
+                <span>{progressPercentage}%</span>
+              </div>
+              <Progress value={progressPercentage} className="h-2" />
             </div>
             
-            <div className="flex justify-between items-center mb-4">
+            {/* Flashcard Content */}
+            <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4 mb-6">
+              <FlashcardItem 
+                flashcard={practiceCards[currentCardIndex]} 
+                onNext={handleNext} 
+              />
+            </div>
+            
+            {/* Navigation Controls */}
+            <div className="flex justify-between items-center mb-6">
               <Button 
                 variant="outline" 
                 size="icon"
                 onClick={handlePrevious}
                 disabled={currentCardIndex === 0}
+                className="rounded-full"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
               
-              <div className="text-center text-sm font-medium">
-                {Math.round((currentCardIndex + 1) / practiceCards.length * 100)}%
+              <div className="flex space-x-1">
+                {practiceCards.map((_, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      idx === currentCardIndex 
+                        ? 'bg-primary' 
+                        : idx < currentCardIndex 
+                          ? 'bg-primary/40' 
+                          : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                  />
+                ))}
               </div>
               
               <Button 
@@ -114,18 +145,13 @@ export function PracticeModal({ open, onOpenChange }: PracticeModalProps) {
                 size="icon"
                 onClick={handleNext}
                 disabled={currentCardIndex === practiceCards.length - 1}
+                className="rounded-full"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
             
-            <div className="mb-6">
-              <FlashcardItem 
-                flashcard={practiceCards[currentCardIndex]} 
-                onNext={handleNext} 
-              />
-            </div>
-            
+            {/* Response Buttons */}
             <div className="grid grid-cols-3 gap-2">
               <Button
                 variant="outline"
