@@ -1,150 +1,171 @@
 
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
+import { LogIn, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { ThemeToggle } from "./ThemeToggle";
+import { AppLanguageSelector } from "./AppLanguageSelector";
+import { useAppLanguage } from "@/contexts/AppLanguageContext";
 
 export function Navbar() {
-  const { user, isAuthenticated, logout } = useAuth();
-  const navigate = useNavigate();
-  const isMobile = useIsMobile();
+  const { isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { t } = useAppLanguage();
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
+  };
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
   };
 
   return (
-    <nav className="bg-gradient-to-r from-primary to-accent py-4 px-6 shadow-md">
-      <div className="container mx-auto flex items-center justify-between">
-        <div className="flex items-center">
-          <Link to="/" className="text-white text-2xl font-bold">
-            FluenFlash
-          </Link>
-        </div>
-
-        {isMobile ? (
-          <>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="text-white"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              {isMenuOpen ? (
-                <X className="h-6 w-6" />
-              ) : (
-                <Menu className="h-6 w-6" />
-              )}
-            </Button>
-
-            {isMenuOpen && (
-              <div className="absolute top-16 right-0 left-0 bg-white shadow-md z-50 p-4 flex flex-col space-y-2">
-                <Link
-                  to="/"
-                  className="px-4 py-2 hover:bg-gray-100 rounded-md"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Home
-                </Link>
-                {isAuthenticated ? (
-                  <>
-                    <Link
-                      to="/dashboard"
-                      className="px-4 py-2 hover:bg-gray-100 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      to="/words-learned"
-                      className="px-4 py-2 hover:bg-gray-100 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Words Learned
-                    </Link>
-                    <Button
-                      onClick={() => {
-                        handleLogout();
-                        setIsMenuOpen(false);
-                      }}
-                      variant="ghost"
-                      className="justify-start px-4 py-2 hover:bg-gray-100 rounded-md"
-                    >
-                      Logout
-                    </Button>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      to="/login"
-                      className="px-4 py-2 hover:bg-gray-100 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      to="/register"
-                      className="px-4 py-2 hover:bg-gray-100 rounded-md"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Register
-                    </Link>
-                  </>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
-          <div className="flex items-center space-x-4">
-            <Link to="/" className="text-white hover:text-gray-200">
-              Home
+    <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-40">
+      <div className="container mx-auto px-4">
+        <div className="flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <Link to="/" className="text-xl font-bold text-primary">
+              FluenFlash
             </Link>
-            {isAuthenticated ? (
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex md:items-center md:space-x-4">
+            <Link
+              to="/"
+              className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary-foreground px-3 py-2 text-sm font-medium"
+            >
+              {t("navbar.home")}
+            </Link>
+            {isAuthenticated && (
               <>
-                <Link to="/dashboard" className="text-white hover:text-gray-200">
-                  Dashboard
+                <Link
+                  to="/dashboard"
+                  className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary-foreground px-3 py-2 text-sm font-medium"
+                >
+                  {t("navbar.dashboard")}
                 </Link>
-                <Link to="/words-learned" className="text-white hover:text-gray-200">
-                  Words Learned
+                <Link
+                  to="/words-learned"
+                  className="text-gray-600 dark:text-gray-300 hover:text-primary dark:hover:text-primary-foreground px-3 py-2 text-sm font-medium"
+                >
+                  {t("navbar.wordsLearned")}
                 </Link>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="secondary" className="ml-2">
-                      {user?.name || "Account"}
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleLogout}>
-                      Logout
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
               </>
+            )}
+          </nav>
+
+          <div className="hidden md:flex md:items-center md:space-x-2">
+            <AppLanguageSelector />
+            <ThemeToggle />
+            
+            {isAuthenticated ? (
+              <Button variant="destructive" onClick={logout}>
+                <LogOut className="mr-2 h-4 w-4" />
+                {t("navbar.logout")}
+              </Button>
             ) : (
               <>
                 <Link to="/login">
-                  <Button variant="ghost" className="text-white hover:text-gray-200">
-                    Login
+                  <Button variant="outline">
+                    <LogIn className="mr-2 h-4 w-4" />
+                    {t("navbar.login")}
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button variant="secondary">Register</Button>
+                  <Button>{t("navbar.register")}</Button>
                 </Link>
               </>
             )}
           </div>
-        )}
+
+          {/* Mobile menu button */}
+          <div className="flex md:hidden">
+            <div className="flex items-center space-x-2">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleMenu}
+                aria-label="Toggle menu"
+              >
+                {isMenuOpen ? (
+                  <X className="h-6 w-6" />
+                ) : (
+                  <Menu className="h-6 w-6" />
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
-    </nav>
+
+      {/* Mobile Navigation */}
+      {isMenuOpen && (
+        <div className="md:hidden border-t border-gray-200 dark:border-gray-700">
+          <div className="space-y-1 px-4 py-3">
+            <div className="mb-4">
+              <AppLanguageSelector />
+            </div>
+            <Link
+              to="/"
+              className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+              onClick={closeMenu}
+            >
+              {t("navbar.home")}
+            </Link>
+            {isAuthenticated && (
+              <>
+                <Link
+                  to="/dashboard"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  onClick={closeMenu}
+                >
+                  {t("navbar.dashboard")}
+                </Link>
+                <Link
+                  to="/words-learned"
+                  className="block px-3 py-2 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  onClick={closeMenu}
+                >
+                  {t("navbar.wordsLearned")}
+                </Link>
+              </>
+            )}
+            <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
+              {isAuthenticated ? (
+                <Button
+                  variant="destructive"
+                  className="w-full justify-center"
+                  onClick={() => {
+                    logout();
+                    closeMenu();
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {t("navbar.logout")}
+                </Button>
+              ) : (
+                <div className="grid gap-2">
+                  <Link to="/login" className="w-full" onClick={closeMenu}>
+                    <Button variant="outline" className="w-full justify-center">
+                      <LogIn className="mr-2 h-4 w-4" />
+                      {t("navbar.login")}
+                    </Button>
+                  </Link>
+                  <Link to="/register" className="w-full" onClick={closeMenu}>
+                    <Button className="w-full justify-center">
+                      {t("navbar.register")}
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </header>
   );
 }

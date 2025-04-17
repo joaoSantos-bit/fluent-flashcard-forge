@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Flashcard, useFlashcards } from "@/contexts/FlashcardContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FlashcardItem } from "./FlashcardItem";
-import { CheckCircle2 } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { useAppLanguage } from "@/contexts/AppLanguageContext";
 
 type PracticeModalProps = {
   open: boolean;
@@ -21,9 +22,11 @@ type PracticeModalProps = {
 export function PracticeModal({ open, onOpenChange }: PracticeModalProps) {
   const { flashcards, getFlashcardsByLanguage } = useFlashcards();
   const { targetLanguage } = useLanguage();
+  const { t } = useAppLanguage();
   const [practiceCards, setPracticeCards] = useState<Flashcard[]>([]);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+  const [showAnswer, setShowAnswer] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -36,12 +39,21 @@ export function PracticeModal({ open, onOpenChange }: PracticeModalProps) {
       setPracticeCards(shuffled);
       setCurrentCardIndex(0);
       setIsFinished(false);
+      setShowAnswer(false);
     }
   }, [open, getFlashcardsByLanguage, targetLanguage]);
+
+  const handlePrevious = () => {
+    if (currentCardIndex > 0) {
+      setCurrentCardIndex(prev => prev - 1);
+      setShowAnswer(false);
+    }
+  };
 
   const handleNext = () => {
     if (currentCardIndex < practiceCards.length - 1) {
       setCurrentCardIndex(prev => prev + 1);
+      setShowAnswer(false);
     } else {
       setIsFinished(true);
     }
@@ -53,39 +65,108 @@ export function PracticeModal({ open, onOpenChange }: PracticeModalProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Practice Flashcards</DialogTitle>
+          <DialogTitle>{t("practice.title")}</DialogTitle>
           <DialogDescription>
-            Review your flashcards to improve your vocabulary.
+            {t("practice.description")}
           </DialogDescription>
         </DialogHeader>
 
         {practiceCards.length === 0 ? (
           <div className="text-center py-10">
             <p className="text-gray-500 mb-4">
-              You have no flashcards to review at the moment. Add some from the translator!
+              {t("practice.noCards")}
             </p>
-            <Button onClick={handleClose}>Close</Button>
+            <Button onClick={handleClose}>{t("practice.close")}</Button>
           </div>
         ) : isFinished ? (
           <div className="text-center py-10">
             <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h3 className="text-xl font-bold mb-2">Practice Complete!</h3>
+            <h3 className="text-xl font-bold mb-2">{t("practice.complete")}</h3>
             <p className="text-gray-500 mb-6">
-              You've reviewed all your flashcards. Come back later for more practice.
+              {t("practice.completeMessage")}
             </p>
-            <Button onClick={handleClose}>Finish</Button>
+            <Button onClick={handleClose}>{t("practice.finish")}</Button>
           </div>
         ) : (
           <div className="py-4">
             <div className="mb-4 text-center text-sm text-gray-500">
-              Card {currentCardIndex + 1} of {practiceCards.length}
+              {t("practice.card")} {currentCardIndex + 1} {t("practice.of")} {practiceCards.length}
             </div>
-            <FlashcardItem 
-              flashcard={practiceCards[currentCardIndex]} 
-              onNext={handleNext} 
-            />
+            
+            <div className="flex justify-between items-center mb-4">
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handlePrevious}
+                disabled={currentCardIndex === 0}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              
+              <div className="text-center text-sm font-medium">
+                {Math.round((currentCardIndex + 1) / practiceCards.length * 100)}%
+              </div>
+              
+              <Button 
+                variant="outline" 
+                size="icon"
+                onClick={handleNext}
+                disabled={currentCardIndex === practiceCards.length - 1}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="mb-6">
+              <FlashcardItem 
+                flashcard={practiceCards[currentCardIndex]} 
+                onNext={handleNext} 
+              />
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                variant="outline"
+                className="bg-red-50 hover:bg-red-100 border-red-200 dark:bg-red-900/20 dark:hover:bg-red-900/30 dark:border-red-900"
+                onClick={() => {
+                  setShowAnswer(true);
+                }}
+              >
+                {t("practice.dontKnow")}
+              </Button>
+              
+              <Button
+                variant="outline"
+                className="bg-yellow-50 hover:bg-yellow-100 border-yellow-200 dark:bg-yellow-900/20 dark:hover:bg-yellow-900/30 dark:border-yellow-900"
+                onClick={() => {
+                  setShowAnswer(true);
+                }}
+              >
+                {t("practice.notSure")}
+              </Button>
+              
+              <Button
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => {
+                  handleNext();
+                }}
+              >
+                {t("practice.mastered")}
+              </Button>
+            </div>
+
+            {showAnswer && (
+              <div className="mt-4">
+                <Button 
+                  className="w-full"
+                  onClick={handleNext}
+                >
+                  {t("practice.next")}
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </DialogContent>

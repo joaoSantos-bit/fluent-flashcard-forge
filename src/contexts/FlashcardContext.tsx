@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { Language } from "./LanguageContext";
@@ -41,7 +40,7 @@ type FlashcardContextType = {
   getFlashcardsByLanguage: (language: Language) => Flashcard[];
   getWordsByLanguage: (language: Language) => Word[];
   getWordsStats: () => { mastered: number; learning: number; unknown: number };
-  extractWordsFromText: (text: string, translation: string, language: Language) => Word[];
+  extractWordsFromText: (text: string, translation: string, language: Language) => Omit<Word, "id" | "createdAt" | "lastReviewedAt">[];
 };
 
 const FlashcardContext = createContext<FlashcardContextType>({
@@ -276,7 +275,7 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   // Extract unique words from a text
-  const extractWordsFromText = (text: string, translation: string, language: Language): Word[] => {
+  const extractWordsFromText = (text: string, translation: string, language: Language): Omit<Word, "id" | "createdAt" | "lastReviewedAt">[] => {
     // Simple word extraction for demo purposes
     // In a real app, this would use a proper NLP library
     
@@ -289,7 +288,7 @@ export const FlashcardProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     // Remove duplicates
     const uniqueWords = [...new Set(textWords)];
     
-    // Create word objects
+    // Create word objects (fixing the type issue)
     return uniqueWords.map(word => ({
       word,
       translation: word, // This is a placeholder, in a real app we'd translate properly

@@ -6,14 +6,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/components/ui/use-toast";
 import { useFlashcards } from "@/contexts/FlashcardContext";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useAppLanguage } from "@/contexts/AppLanguageContext";
 import { Volume2 } from "lucide-react";
+import { LanguageSelector } from "./LanguageSelector";
+import { WordExtractor } from "./WordExtractor";
+
+type ExtractedWord = {
+  word: string;
+  translation: string;
+  isKnown: boolean;
+};
 
 export function TextTranslator() {
   const [sourceText, setSourceText] = useState("");
   const [translatedText, setTranslatedText] = useState("");
   const [isTranslating, setIsTranslating] = useState(false);
+  const [extractedWords, setExtractedWords] = useState<ExtractedWord[]>([]);
+  const [showWordExtractor, setShowWordExtractor] = useState(false);
   const { extractWordsFromText, addWord } = useFlashcards();
   const { targetLanguage } = useLanguage();
+  const { t } = useAppLanguage();
 
   const handleTranslate = async () => {
     if (!sourceText.trim()) {
@@ -61,17 +73,22 @@ export function TextTranslator() {
       
       setTranslatedText(translation);
       
-      // Extract words from source text
-      const extractedWords = extractWordsFromText(sourceText, translation, targetLanguage);
+      // Extract words from source text for the word selection process
+      const rawExtractedWords = extractWordsFromText(sourceText, translation, targetLanguage);
       
-      // Add words to the user's vocabulary
-      extractedWords.forEach(word => {
-        addWord(word);
-      });
+      // Format for the word extractor component
+      const formattedWords = rawExtractedWords.map(word => ({
+        word: word.word,
+        translation: word.translation,
+        isKnown: false
+      }));
+      
+      setExtractedWords(formattedWords);
+      setShowWordExtractor(true);
       
       toast({
         title: "Translation completed",
-        description: `Extracted ${extractedWords.length} words from your text.`,
+        description: `Extracted ${formattedWords.length} words from your text.`,
       });
     } catch (error) {
       toast({
@@ -86,64 +103,107 @@ export function TextTranslator() {
 
   const playAudio = (text: string, isPortuguese = true) => {
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = isPortuguese ? 'pt-BR' : 'en-US'; // Set Portuguese for source words
+    
+    // Set the language based on the text source
+    if (isPortuguese) {
+      utterance.lang = 'pt-BR'; // Portuguese (Brazil)
+    } else {
+      // Set language based on target language
+      switch (targetLanguage) {
+        case 'english':
+          utterance.lang = 'en-US';
+          break;
+        case 'spanish':
+          utterance.lang = 'es-ES';
+          break;
+        case 'french':
+          utterance.lang = 'fr-FR';
+          break;
+        case 'german':
+          utterance.lang = 'de-DE';
+          break;
+        case 'italian':
+          utterance.lang = 'it-IT';
+          break;
+        default:
+          utterance.lang = 'en-US';
+      }
+    }
+    
     window.speechSynthesis.speak(utterance);
+  };
+
+  const handleCloseWordExtractor = () => {
+    setShowWordExtractor(false);
+    setExtractedWords([]);
   };
 
   return (
     <Card className="w-full">
       <CardHeader>
-        <CardTitle>Text Translator</CardTitle>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+          <CardTitle>{t("translator.title")}</CardTitle>
+          <LanguageSelector className="mt-2 sm:mt-0" />
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-sm font-medium">Portuguese Text</label>
-            {sourceText && (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8"
-                onClick={() => playAudio(sourceText, true)}
-              >
-                <Volume2 className="h-4 w-4" />
-              </Button>
+        {!showWordExtractor ? (
+          <>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">{t("translator.sourceText")}</label>
+                {sourceText && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8"
+                    onClick={() => playAudio(sourceText, true)}
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+              <Textarea
+                placeholder={t("translator.placeholder")}
+                value={sourceText}
+                onChange={(e) => setSourceText(e.target.value)}
+                rows={6}
+                className="resize-none"
+              />
+            </div>
+            
+            <Button
+              onClick={handleTranslate}
+              disabled={isTranslating || !sourceText.trim()}
+              className="w-full"
+            >
+              {isTranslating ? t("translator.translating") : t("translator.extractWords")}
+            </Button>
+            
+            {translatedText && (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium">{t("translator.translation")}</label>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8"
+                    onClick={() => playAudio(translatedText, false)}
+                  >
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md min-h-[6rem]">
+                  {translatedText}
+                </div>
+              </div>
             )}
-          </div>
-          <Textarea
-            placeholder="Enter your Portuguese text here..."
-            value={sourceText}
-            onChange={(e) => setSourceText(e.target.value)}
-            rows={6}
-            className="resize-none"
+          </>
+        ) : (
+          <WordExtractor 
+            words={extractedWords} 
+            onClose={handleCloseWordExtractor} 
           />
-        </div>
-        
-        <Button
-          onClick={handleTranslate}
-          disabled={isTranslating || !sourceText.trim()}
-          className="w-full"
-        >
-          {isTranslating ? "Translating..." : "Translate"}
-        </Button>
-        
-        {translatedText && (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-sm font-medium">Translation</label>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8"
-                onClick={() => playAudio(translatedText, false)}
-              >
-                <Volume2 className="h-4 w-4" />
-              </Button>
-            </div>
-            <div className="p-3 bg-gray-50 rounded-md min-h-[6rem]">
-              {translatedText}
-            </div>
-          </div>
         )}
       </CardContent>
     </Card>
